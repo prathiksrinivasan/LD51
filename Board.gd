@@ -1,25 +1,32 @@
 extends Node2D
 
 const gemTile = preload("res://Tile.tscn")
+const particleExplosion = preload("res://particleExplosion.tscn")
 export(int) var width = 20
 export(int) var height = 10
 export(int) var tileSize = 50
 var boardTiles := []
 var boardState := []
+var updatingBoard = false
+signal pastLimit
+signal sfxCue(sfxName)
+signal score(scoreAmt)
 
-func _input(event):
-	if(event.is_action_pressed("ui_right")):
-		_addNewCol()
+#func _input(event):
+#	if(event.is_action_pressed("ui_right")):
+#		_addNewCol()
+#	if(event.is_action_pressed("ui_left")):
+#		nukeBoard()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	for i in range(width):
 		boardState.append([])
-		if(i<width/2):	
+		if(i<9):	
 			boardTiles.append([])
 		for j in range(height):
 			boardState[i].append(0)
-			if(i<width/2):
+			if(i<9):
 				_addTile(i)
 	_updateTiles()
 	
@@ -41,22 +48,28 @@ func _onTileClicked(tile):
 	#var deletedTile = boardTiles[tile.gridPos.x].pop_at(tile.gridPos.y)
 	#deletedTile.queue_free()
 	var block = getBlock(tile.gridPos)
-	var dummyTile = gemTile.instance()
-	var deletedTiles = []
-	for i in block:
-		boardState[i.x][i.y] = 0
-		deletedTiles.append(boardTiles[i.x][i.y])
-		boardTiles[i.x][i.y] = dummyTile
-	for i in deletedTiles:
-		i.queue_free()
-	for i in boardTiles:
-		for j in range(i.count(dummyTile)):
-			i.erase(dummyTile)
-	_updateTiles()	
-	print(boardState)
+	if(block.size() < 2):
+		#signal here
+		emit_signal("sfxCue", "res://sounds/wrong.wav")
+	else:
+		emit_signal("sfxCue", "res://sounds/shot.wav")
+		emit_signal("score",calcScore(block))
+		var dummyTile = gemTile.instance()
+		var deletedTiles = []
+		for i in block:
+			addExplosion(i)
+			boardState[i.x][i.y] = 0
+			deletedTiles.append(boardTiles[i.x][i.y])
+			boardTiles[i.x][i.y] = dummyTile
+		for i in deletedTiles:
+			i.queue_free()
+		for i in boardTiles:
+			for j in range(i.count(dummyTile)):
+				i.erase(dummyTile)
+		_updateTiles()
 	
 func _updateTiles():
-	
+	updatingBoard = true
 	#adjust board tile array to reflect board state
 	while(boardTiles.has([])):
 		boardTiles.erase([])
@@ -87,7 +100,7 @@ func _updateTiles():
 		for j in range(boardTiles[k].size()):
 			boardTiles[k][j].gridPos = Vector2(k,j)
 			boardTiles[k][j].drop_and_slide()
-					
+	updatingBoard = false
 					
 func getBlock(tilePos):
 	#flood fill algorithm variation
@@ -95,7 +108,7 @@ func getBlock(tilePos):
 	var out = []
 	var ogID = boardState[tilePos.x][tilePos.y]
 	stack.push_back(tilePos)
-	while(!stack.empty()):
+	while(!stack.empty() and ogID != 0):
 		var pos = stack.pop_back()
 		if(!out.has(pos)):
 			out.append(pos)
@@ -126,7 +139,48 @@ func _addNewCol():
 	for i in range(height):
 		t.append(0)
 	boardState.push_front(t)
-	boardState.pop_back()
+	var n = boardState.pop_back()
+	if(_arraySum(n)>0):
+		emit_signal("pastLimit")
 	for i in range(height):
 		_addTile(0)
+		
 	_updateTiles()
+	emit_signal("sfxCue","res://sounds/newCol.wav")
+	
+func _updateIDs(newIDX):
+	#I am pretty sure this is a terrible idea but I have no idea what im doing
+	if(updatingBoard):
+		_updateIDs(newIDX)
+	else:
+		for i in boardTiles:
+			for j in i:
+				j.id = j.attributes[newIDX]
+				if(j.gridPos.x < width):
+					boardState[j.gridPos.x][j.gridPos.y] = j.id
+				
+func addExplosion(i):
+	var particle = particleExplosion.instance()
+	particle.position = boardTiles[i.x][i.y].position
+	particle.process_material.color = boardTiles[i.x][i.y].self_modulate
+	add_child(particle)
+	
+func nukeBoard():
+	var gone = []
+	for i in boardTiles:
+		for j in i:
+			gone.append(j)
+			addExplosion(j.gridPos)
+	for i in gone:
+		i.queue_free()
+	boardTiles.clear()
+	for i in range(boardState.size()):
+		for j in range(boardState[i].size()):
+			boardState[i][j] = 0
+	
+	emit_signal("sfxCue","res://sounds/sound.wav")
+	
+func calcScore(block):
+	var gems = block.size()
+	return gems*20*(1+(.5*(gems-2)))
+	

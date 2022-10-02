@@ -1,0 +1,67 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://Text.tres" type="Theme" id=1]
+[ext_resource path="res://sprites/pauseButton.png" type="Texture" id=2]
+[ext_resource path="res://sprites/soundOn.png" type="Texture" id=3]
+[ext_resource path="res://sprites/soundOff.png" type="Texture" id=4]
+
+[node name="pauseScreen" type="CanvasLayer"]
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color( 0, 0, 0, 0.294118 )
+
+[node name="Label" type="Label" parent="ColorRect"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -97.5
+margin_top = -32.0
+margin_right = 97.5
+margin_bottom = 32.0
+theme = ExtResource( 1 )
+text = "PAUSED"
+align = 1
+
+[node name="BGMOff" type="TextureButton" parent="ColorRect"]
+margin_left = 400.0
+margin_top = 500.0
+margin_right = 500.0
+margin_bottom = 600.0
+toggle_mode = true
+texture_normal = ExtResource( 3 )
+texture_pressed = ExtResource( 4 )
+
+[node name="Label" type="Label" parent="ColorRect/BGMOff"]
+margin_top = 100.0
+margin_right = 110.0
+margin_bottom = 164.0
+theme = ExtResource( 1 )
+text = "BGM"
+align = 1
+
+[node name="SFXOff" type="TextureButton" parent="ColorRect"]
+margin_left = 780.0
+margin_top = 500.0
+margin_right = 880.0
+margin_bottom = 600.0
+toggle_mode = true
+texture_normal = ExtResource( 3 )
+texture_pressed = ExtResource( 4 )
+
+[node name="Label" type="Label" parent="ColorRect/SFXOff"]
+margin_top = 100.0
+margin_right = 110.0
+margin_bottom = 164.0
+theme = ExtResource( 1 )
+text = "SFX"
+align = 1
+
+[node name="pauseButton" type="TextureButton" parent="."]
+margin_left = 19.0
+margin_top = 18.0
+margin_right = 119.0
+margin_bottom = 118.0
+texture_normal = ExtResource( 2 )

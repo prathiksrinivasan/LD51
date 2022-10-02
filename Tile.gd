@@ -6,20 +6,27 @@ extends Sprite
 # var b = "text"
 onready var hovered = false
 onready var lastHovered = false
+var attributes = [0,0,0]
 var id = 0
 var size = Vector2()
 var gridPos = Vector2()
 var spacing = 55
-var colors = {1:Color(255,0,0),2:Color(0,255,0),3:Color(0,0,255),4:Color(255,255,0),5:Color(255,0,255)}
-
+var shapes = {1:preload("res://sprites/shape1.png"),2:preload("res://sprites/shape2.png"),3:preload("res://sprites/shape3.png"),4:preload("res://sprites/shape4.png"),5:preload("res://sprites/shape5.png")}
+var colors = {1:Color8(255,55,55,255),2:Color8(63,218,36,255),3:Color8(88,134,255,255),4:Color8(255,227,71,255),5:Color("ee5cff")}
+var eyes = {1:preload("res://sprites/eyes1.png"),2:preload("res://sprites/eyes2.png"),3:preload("res://sprites/eyes3.png"),4:preload("res://sprites/eyes4.png"),5:preload("res://sprites/eyes5.png")}
 signal tileClicked(tile)
 
 # Called when the node enters the scene tree for the first time.
 func _init():
-	id = randi()%5+1
+	attributes[0] = randi()%5+1
+	attributes[1] = randi()%5+1
+	attributes[2] = randi()%5+1
+	id = attributes[0]
 
 func _ready():
-	self_modulate = colors[id]
+	self.texture = shapes[attributes[0]]
+	self.self_modulate = colors[attributes[1]]
+	$Eyes.texture = eyes[attributes[2]]
 	
 func _physics_process(delta):
 	if(lastHovered != hovered):
@@ -50,8 +57,9 @@ func _on_Area2D_mouse_exited():
 	hovered = false
 	
 func set_size(new_size: Vector2):
-  size = new_size
-  scale = size / texture.get_size()
+	size = new_size
+	#print(size/texture.get_size())
+	scale = size / texture.get_size() 
 
 func drop_and_slide():
 	if(gridPos != position):
@@ -59,4 +67,6 @@ func drop_and_slide():
 		tween.tween_property(self,"position",Vector2(position.x,gridPos.y*spacing),.3)
 		if(gridPos.x*spacing != position.x):
 			tween.tween_property(self,"position",Vector2(gridPos.x*spacing,gridPos.y*spacing),.3)
+		
+
 			
