@@ -7,7 +7,9 @@ export(int) var tileSize = 50
 var boardTiles := []
 var boardState := []
 
-
+func _input(event):
+	if(event.is_action_pressed("ui_right")):
+		_addNewCol()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -19,6 +21,7 @@ func _ready():
 			boardState[i].append(0)
 			if(i<width/2):
 				_addTile(i)
+	_updateTiles()
 	
 	
 func _addTile(col):
@@ -26,7 +29,7 @@ func _addTile(col):
 	var row = boardTiles[col].size()
 	boardState[col][row] = newTile.id
 	newTile.set_size(Vector2(tileSize,tileSize))
-	newTile.position = Vector2(col*tileSize*1.1,row*tileSize*1.1)
+	newTile.position = Vector2((col-1)*tileSize*1.1,row*tileSize*1.1)
 	newTile.gridPos = Vector2(col,row)
 	newTile.connect("tileClicked",self, "_onTileClicked")
 	boardTiles[col].append(newTile)
@@ -34,12 +37,29 @@ func _addTile(col):
 	
 
 func _onTileClicked(tile):
-	boardState[tile.gridPos.x][tile.gridPos.y] = 0
-	var deletedTile = boardTiles[tile.gridPos.x].pop_at(tile.gridPos.y)
+	#boardState[tile.gridPos.x][tile.gridPos.y] = 0
+	#var deletedTile = boardTiles[tile.gridPos.x].pop_at(tile.gridPos.y)
+	#deletedTile.queue_free()
+	var block = getBlock(tile.gridPos)
+	var dummyTile = gemTile.instance()
+	var deletedTiles = []
+	for i in block:
+		boardState[i.x][i.y] = 0
+		deletedTiles.append(boardTiles[i.x][i.y])
+		boardTiles[i.x][i.y] = dummyTile
+	for i in deletedTiles:
+		i.queue_free()
+	for i in boardTiles:
+		for j in range(i.count(dummyTile)):
+			i.erase(dummyTile)
 	_updateTiles()	
-	deletedTile.queue_free()
+	print(boardState)
 	
 func _updateTiles():
+	
+	#adjust board tile array to reflect board state
+	while(boardTiles.has([])):
+		boardTiles.erase([])
 	#loop through boardstate
 	#bubble sort the 0s up to the top in each col
 	#if a column is all 0s and the column in front of it isn't, move that column back
@@ -54,16 +74,15 @@ func _updateTiles():
 					if(boardState[i][k2] == 0):
 						boardState[i][k2] = boardState[i][k2+1]
 						boardState[i][k2+1] = 0
-						for j in range(boardTiles[i].size()):
-							boardTiles[i][j].gridPos = Vector2(i,j)
+						if(i<boardTiles.size()):
+							for j in range(boardTiles[i].size()):
+								boardTiles[i][j].gridPos = Vector2(i,j)
 	for i in range(width-1):
 		if(_arraySum(boardState[i]) == 0):
 			var temp = boardState[i].duplicate()
 			boardState[i] = boardState[i+1]
 			boardState[i+1] = temp
-	#adjust board tile array to reflect board state
-	while(boardTiles.has([])):
-		boardTiles.erase([])
+	
 	for k in range(boardTiles.size()):
 		for j in range(boardTiles[k].size()):
 			boardTiles[k][j].gridPos = Vector2(k,j)
@@ -71,12 +90,43 @@ func _updateTiles():
 					
 					
 func getBlock(tilePos):
-	pass
+	#flood fill algorithm variation
+	var stack = []
+	var out = []
+	var ogID = boardState[tilePos.x][tilePos.y]
+	stack.push_back(tilePos)
+	while(!stack.empty()):
+		var pos = stack.pop_back()
+		if(!out.has(pos)):
+			out.append(pos)
+			if(pos.x > 0):
+				if(boardState[pos.x-1][pos.y] == ogID):
+					stack.push_back(Vector2(pos.x-1,pos.y))
+			if(pos.x < width-1):
+				if(boardState[pos.x+1][pos.y] == ogID):
+					stack.push_back(Vector2(pos.x+1,pos.y))
+			if(pos.y > 0):
+				if(boardState[pos.x][pos.y-1] == ogID):
+					stack.push_back(Vector2(pos.x,pos.y-1))
+			if(pos.y < height-1):
+				if(boardState[pos.x][pos.y+1] == ogID):
+					stack.push_back(Vector2(pos.x,pos.y+1))
+	return out
+	
+	
 func _arraySum(array):
 	var sum = 0	
 	for j in range(height):
 		sum += array[j]
 	return sum
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-#func _process(delta):
-#	pass
+	
+func _addNewCol():
+	boardTiles.push_front([])
+	var t = []
+	for i in range(height):
+		t.append(0)
+	boardState.push_front(t)
+	boardState.pop_back()
+	for i in range(height):
+		_addTile(0)
+	_updateTiles()
