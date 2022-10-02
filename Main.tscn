@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://Board.tscn" type="PackedScene" id=1]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Board" parent="." instance=ExtResource( 1 )]
+position = Vector2( 885, 442 )
+rotation = 3.14159
+height = 8
